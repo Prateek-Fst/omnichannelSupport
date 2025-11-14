@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common"
-import type { PrismaService } from "../../common/prisma/prisma.service"
+import { PrismaService } from "../../common/prisma/prisma.service"
 import { logger } from "../../common/logger"
 
 @Injectable()

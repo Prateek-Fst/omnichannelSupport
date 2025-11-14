@@ -7,6 +7,7 @@ import Redis from "ioredis"
 const redis = new Redis({
   host: process.env.REDIS_HOST || "localhost",
   port: Number.parseInt(process.env.REDIS_PORT || "6379"),
+  maxRetriesPerRequest: null,
 })
 
 const prisma = new PrismaClient()
@@ -27,8 +28,9 @@ async function processOutboundMessage(job) {
       throw new Error(`Channel not found: ${channelId}`)
     }
 
-    // Get connector and send
+    // Get connector and initialize with channel config
     const connector = connectorFactory.getConnector(channel.type)
+    await connector.init((channel.config as Record<string, any>) || {})
 
     const result = await connector.sendMessage({
       ticketId,

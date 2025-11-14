@@ -1,19 +1,42 @@
-import { Controller, Post, Body, Param, Headers, BadRequestException } from "@nestjs/common"
-import type { Queue } from "bull"
-import type { PrismaService } from "../../common/prisma/prisma.service"
-import type { ConnectorFactory } from "../../connectors/connector.factory"
+import { Controller, Get, Post, Body, Param, Headers, Query, BadRequestException, Inject } from "@nestjs/common"
+import { Queue } from "bull"
+import { PrismaService } from "../../common/prisma/prisma.service"
+import { ConnectorFactory } from "../../connectors/connector.factory"
 import { logger } from "../../common/logger"
 
 @Controller("webhook")
 export class WebhooksController {
-  private inboundQueue: Queue
-  private prisma: PrismaService
-  private connectorFactory: ConnectorFactory
 
-  constructor(inboundQueue: Queue, prisma: PrismaService, connectorFactory: ConnectorFactory) {
-    this.inboundQueue = inboundQueue
-    this.prisma = prisma
-    this.connectorFactory = connectorFactory
+  constructor(
+    @Inject('BullQueue_inbound') private readonly inboundQueue: Queue,
+    private readonly prisma: PrismaService,
+    private readonly connectorFactory: ConnectorFactory,
+  ) {}
+
+  @Get(":channelId")
+  async verifyWebhook(
+    @Param('channelId') channelId: string,
+    @Query('hub.mode') mode: string,
+    @Query('hub.verify_token') verifyToken: string,
+    @Query('hub.challenge') challenge: string,
+  ) {
+    logger.info(`Webhook verification for channel: ${channelId}`)
+    
+    if (mode === 'subscribe') {
+      const channel = await this.prisma.channel.findUnique({
+        where: { id: channelId },
+      })
+      
+      if (channel && (channel.config as any).webhookVerifyToken === verifyToken) {
+        logger.info(`Webhook verified successfully for channel: ${channelId}`)
+        return challenge
+      } else {
+        logger.warn(`Invalid verify token for channel: ${channelId}`)
+        throw new BadRequestException("Invalid verify token")
+      }
+    }
+    
+    throw new BadRequestException("Invalid verification request")
   }
 
   @Post(":channelId")

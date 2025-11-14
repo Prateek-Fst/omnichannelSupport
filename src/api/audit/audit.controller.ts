@@ -1,10 +1,10 @@
 import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common"
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger"
-import type { AuditService } from "./audit.service"
+import { AuditService } from "./audit.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { RbacGuard } from "../auth/guards/rbac.guard"
 import { Roles } from "../auth/decorators/roles.decorator"
-import type { PrismaService } from "../../common/prisma/prisma.service"
+import { PrismaService } from "../../common/prisma/prisma.service"
 
 @ApiTags("audit")
 @Controller("orgs/:orgId/audit-logs")

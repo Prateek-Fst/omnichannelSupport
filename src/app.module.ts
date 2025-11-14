@@ -2,25 +2,18 @@ import { Module } from "@nestjs/common"
 import { ConfigModule } from "@nestjs/config"
 import { PrismaModule } from "./common/prisma/prisma.module"
 import { AuthModule } from "./api/auth/auth.module"
-import { OrganisationsModule } from "./api/organisations/organisations.module"
 import { UsersModule } from "./api/users/users.module"
+import { OrganisationsModule } from "./api/organisations/organisations.module"
 import { ChannelsModule } from "./api/channels/channels.module"
 import { TicketsModule } from "./api/tickets/tickets.module"
 import { MessagesModule } from "./api/messages/messages.module"
-import { MacrosModule } from "./api/macros/macros.module"
 import { CampaignsModule } from "./api/campaigns/campaigns.module"
+import { MacrosModule } from "./api/macros/macros.module"
+import { AnalyticsModule } from "./api/analytics/analytics.module"
 import { AuditModule } from "./api/audit/audit.module"
 import { WebhooksModule } from "./api/webhooks/webhooks.module"
-import { RedisModule } from "./common/redis/redis.module"
-import { BullModule } from "@nestjs/bull"
-import { EnvService } from "./config/env.service"
-
-@Module({
-  providers: [EnvService],
-  exports: [EnvService],
-})
-class ConfigServiceModule {}
-
+import { CustomersModule } from "./api/customers/customers.module"
+import { NotificationsModule } from "./api/notifications/notifications.module"
 
 @Module({
   imports: [
@@ -28,26 +21,18 @@ class ConfigServiceModule {}
       isGlobal: true,
       envFilePath: [".env.local", ".env"],
     }),
-    ConfigServiceModule,
     PrismaModule,
-    RedisModule,
-    BullModule.forRootAsync({
-      useFactory: async (envService: EnvService) => ({
-        redis: {
-          host: envService.getString("REDIS_HOST", "localhost"),
-          port: envService.getNumber("REDIS_PORT", 6379),
-        },
-      }),
-      inject: [EnvService],
-    }),
     AuthModule,
-    OrganisationsModule,
     UsersModule,
+    OrganisationsModule,
     ChannelsModule,
     TicketsModule,
     MessagesModule,
-    MacrosModule,
+    CustomersModule,
+    NotificationsModule,
     CampaignsModule,
+    MacrosModule,
+    AnalyticsModule,
     AuditModule,
     WebhooksModule,
   ],

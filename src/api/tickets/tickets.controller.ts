@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Body, Param, Query, UseGuards, Request } from "@nestjs/common"
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger"
-import type { TicketsService } from "./tickets.service"
+import { TicketsService } from "./tickets.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 
 @ApiTags("tickets")
@@ -17,9 +17,10 @@ export class TicketsController {
 
   @Get(':ticketId')
   async getTicketById(
+    @Param('orgId') orgId: string,
     @Param('ticketId') ticketId: string,
   ) {
-    return this.ticketsService.getTicketById(ticketId);
+    return this.ticketsService.getTicketById(orgId, ticketId);
   }
 
   @Post()
@@ -28,17 +29,17 @@ export class TicketsController {
   }
 
   @Put(":ticketId")
-  async updateTicket(@Param('ticketId') ticketId: string, @Body() body: any, @Request() req) {
-    return this.ticketsService.updateTicket(ticketId, body, req.user.id)
+  async updateTicket(@Param('orgId') orgId: string, @Param('ticketId') ticketId: string, @Body() body: any, @Request() req) {
+    return this.ticketsService.updateTicket(orgId, ticketId, body, req.user.id)
   }
 
   @Post(":ticketId/assign")
-  async assignTicket(@Param('ticketId') ticketId: string, @Body() body: { assigneeId: string }, @Request() req) {
-    return this.ticketsService.assignTicket(ticketId, body.assigneeId, req.user.id)
+  async assignTicket(@Param('orgId') orgId: string, @Param('ticketId') ticketId: string, @Body() body: { assigneeId: string }, @Request() req) {
+    return this.ticketsService.assignTicket(orgId, ticketId, body.assigneeId, req.user.id)
   }
 
   @Post(":ticketId/close")
-  async closeTicket(@Param('ticketId') ticketId: string, @Request() req) {
-    return this.ticketsService.closeTicket(ticketId, req.user.id)
+  async closeTicket(@Param('orgId') orgId: string, @Param('ticketId') ticketId: string, @Request() req) {
+    return this.ticketsService.closeTicket(orgId, ticketId, req.user.id)
   }
 }

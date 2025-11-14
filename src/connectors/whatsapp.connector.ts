@@ -6,7 +6,7 @@ import { v4 as uuid } from "uuid"
 
 export class WhatsAppConnector extends AbstractConnector {
   type = "whatsapp" as const
-  private apiUrl = "https://graph.instagram.com/v18.0"
+  private apiUrl = "https://graph.facebook.com/v18.0"
 
   async init(config: Record<string, any>): Promise<void> {
     await super.init(config)
@@ -41,6 +41,21 @@ export class WhatsAppConnector extends AbstractConnector {
     logger.info("WhatsAppConnector: Parsing webhook")
 
     try {
+      // Handle mock format first
+      if (body.senderPhone && body.message) {
+        return {
+          externalMessageId: body.messageId || `wa-${Date.now()}`,
+          externalThreadId: body.senderPhone,
+          senderName: body.senderName || body.senderPhone,
+          senderPhone: body.senderPhone,
+          content: body.message,
+          timestamp: new Date(),
+          messageType: 'message',
+          metadata: body.metadata || { platform: "whatsapp" },
+        }
+      }
+
+      // Real WhatsApp webhook format
       const entry = body.entry?.[0]
       const change = entry?.changes?.[0]
       const value = change?.value
@@ -52,18 +67,47 @@ export class WhatsAppConnector extends AbstractConnector {
         throw new Error("Invalid WhatsApp webhook structure")
       }
 
-      const content = message.text?.body || ""
+      let content = ""
+      let mediaUrls: string[] = []
+
+      // Handle different message types
+      switch (message.type) {
+        case 'text':
+          content = message.text?.body || ""
+          break
+        case 'image':
+          content = message.image?.caption || "[Image]"
+          mediaUrls = [message.image?.id]
+          break
+        case 'video':
+          content = message.video?.caption || "[Video]"
+          mediaUrls = [message.video?.id]
+          break
+        case 'document':
+          content = message.document?.caption || `[Document: ${message.document?.filename}]`
+          mediaUrls = [message.document?.id]
+          break
+        case 'audio':
+          content = "[Audio Message]"
+          mediaUrls = [message.audio?.id]
+          break
+        default:
+          content = `[${message.type} message]`
+      }
 
       return {
         externalMessageId: message.id,
         externalThreadId: message.from,
-        senderName: contact.profile.name,
+        senderName: contact.profile?.name || contact.wa_id,
         senderPhone: contact.wa_id,
         content,
         timestamp: new Date(Number.parseInt(message.timestamp) * 1000),
+        messageType: 'message',
+        mediaUrls: mediaUrls.length > 0 ? mediaUrls : undefined,
         metadata: {
           type: message.type,
           status: message.status,
+          platform: "whatsapp"
         },
       }
     } catch (err) {

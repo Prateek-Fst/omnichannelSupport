@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common"
-import type { PrismaService } from "../../common/prisma/prisma.service"
-import type { ConnectorFactory } from "../../connectors/connector.factory"
+import { PrismaService } from "../../common/prisma/prisma.service"
+import { ConnectorFactory } from "../../connectors/connector.factory"
 import { logger } from "../../common/logger"
 
 @Injectable()
 export class ChannelsService {
   constructor(
-    private prisma: PrismaService,
-    private connectorFactory: ConnectorFactory,
+    private readonly prisma: PrismaService,
+    private readonly connectorFactory: ConnectorFactory,
   ) {}
 
   async createChannel(orgId: string, data: any, requesterId: string) {
@@ -125,5 +125,28 @@ export class ChannelsService {
     logger.info(`Channel deleted: ${channelId}`)
 
     return { success: true }
+  }
+
+  async getChannelCustomers(orgId: string, channelId: string) {
+    const channel = await this.prisma.channel.findFirst({
+      where: { id: channelId, orgId }
+    })
+
+    if (!channel) {
+      throw new NotFoundException("Channel not found")
+    }
+
+    return this.prisma.customer.findMany({
+      where: {
+        orgId,
+        platform: channel.type
+      },
+      orderBy: { lastMessageAt: 'desc' },
+      include: {
+        _count: {
+          select: { tickets: true }
+        }
+      }
+    })
   }
 }

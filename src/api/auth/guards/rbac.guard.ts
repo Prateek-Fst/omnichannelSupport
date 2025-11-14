@@ -1,5 +1,5 @@
 import { Injectable, type CanActivate, type ExecutionContext, ForbiddenException } from "@nestjs/common"
-import type { Reflector } from "@nestjs/core"
+import { Reflector } from "@nestjs/core"
 
 @Injectable()
 export class RbacGuard implements CanActivate {

@@ -5,6 +5,9 @@ export interface ParsedMessage {
   senderPhone?: string
   content: string
   timestamp: Date
+  messageType?: 'message' | 'comment' | 'mention' | 'story_reply'
+  postId?: string // For comments/mentions
+  mediaUrls?: string[] // For media messages
   metadata?: Record<string, any>
 }
 

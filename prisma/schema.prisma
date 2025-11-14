@@ -22,6 +22,8 @@ model Organisation {
   campaigns         Campaign[]
   auditLogs         AuditLog[]
   ticketStatistics  TicketStatistics[]
+  customers         Customer[]
+  notifications     Notification[]
 
   @@index([id])
 }
@@ -102,6 +104,9 @@ model Ticket {
   channelId         String
   channel           Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
   
+  customerId        String?
+  customer          Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  
   externalThreadId  String
   subject           String
   status            TicketStatus @default(OPEN)
@@ -118,6 +123,7 @@ model Ticket {
   @@unique([channelId, externalThreadId])
   @@index([orgId])
   @@index([channelId])
+  @@index([customerId])
   @@index([status])
   @@index([assigneeId])
 }
@@ -285,8 +291,62 @@ enum CampaignStatus {
   COMPLETED
 }
 
+model Customer {
+  id                String   @id @default(uuid())
+  orgId             String
+  organisation      Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  
+  name              String
+  avatar            String?
+  platform          ChannelType
+  externalId        String   // Platform-specific ID (Instagram ID, Facebook ID, etc.)
+  
+  lastMessageAt     DateTime?
+  lastMessage       String?
+  isActive          Boolean  @default(true)
+  
+  metadata          Json     @default("{}") @db.JsonB // Platform-specific data
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  tickets           Ticket[]
+
+  @@unique([orgId, platform, externalId])
+  @@index([orgId])
+  @@index([platform])
+  @@index([lastMessageAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  orgId     String
+  organisation Organisation @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  
+  type      NotificationType
+  title     String
+  message   String
+  data      Json     @default("{}") @db.JsonB
+  
+  isRead    Boolean  @default(false)
+  readAt    DateTime?
+  
+  createdAt DateTime @default(now())
+
+  @@index([orgId])
+  @@index([isRead])
+  @@index([createdAt])
+}
+
 enum RecipientStatus {
   PENDING
   SENT
   FAILED
+}
+
+enum NotificationType {
+  NEW_MESSAGE
+  NEW_COMMENT
+  TICKET_ASSIGNED
+  CUSTOMER_REPLY
 }

@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Request } from "@nestjs/common"
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger"
-import type { CampaignsService } from "./campaigns.service"
+import { CampaignsService } from "./campaigns.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { RbacGuard } from "../auth/guards/rbac.guard"
 import { Roles } from "../auth/decorators/roles.decorator"
@@ -32,8 +32,8 @@ export class CampaignsController {
   @Post(":campaignId/recipients")
   @UseGuards(RbacGuard)
   @Roles("ADMIN")
-  async addRecipients(@Param('campaignId') campaignId: string, @Body() body: { recipients: string[] }) {
-    return this.campaignsService.addRecipients(campaignId, body.recipients)
+  async addRecipients(@Param('orgId') orgId: string, @Param('campaignId') campaignId: string, @Body() body: { recipients: string[] }) {
+    return this.campaignsService.addRecipients(orgId, campaignId, body.recipients)
   }
 
   @Post(":campaignId/start")

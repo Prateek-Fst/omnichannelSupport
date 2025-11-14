@@ -1,12 +1,11 @@
 import { Injectable, BadRequestException, UnauthorizedException } from "@nestjs/common"
 import * as bcrypt from "bcryptjs"
-import type { JwtService } from "@nestjs/jwt"
-import type { PrismaService } from "../../common/prisma/prisma.service"
-import type { RedisService } from "../../common/redis/redis.service"
-import type { SignupDto } from "./dto/signup.dto"
-import type { LoginDto } from "./dto/login.dto"
-import type { RefreshTokenDto } from "./dto/refresh-token.dto"
-import type { AcceptInviteDto } from "./dto/accept-invite.dto"
+import { JwtService } from "@nestjs/jwt"
+import { PrismaService } from "../../common/prisma/prisma.service"
+import { SignupDto } from "./dto/signup.dto"
+import { LoginDto } from "./dto/login.dto"
+import { RefreshTokenDto } from "./dto/refresh-token.dto"
+import { AcceptInviteDto } from "./dto/accept-invite.dto"
 import { logger } from "../../common/logger"
 
 @Injectable()
@@ -14,7 +13,6 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
-    private redis: RedisService,
   ) {}
 
   async signup(dto: SignupDto) {
@@ -95,9 +93,7 @@ export class AuthService {
 
   async refreshAccessToken(dto: RefreshTokenDto) {
     try {
-      const payload = this.jwtService.verify(dto.refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
-      })
+      const payload = this.jwtService.verify(dto.refreshToken)
 
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
@@ -107,18 +103,12 @@ export class AuthService {
         throw new UnauthorizedException("User not found or inactive")
       }
 
-      const accessToken = this.jwtService.sign(
-        {
-          email: user.email,
-          role: user.role,
-          orgId: user.orgId,
-        },
-        {
-          subject: user.id,
-          expiresIn: process.env.JWT_EXPIRATION || "15m",
-          secret: process.env.JWT_SECRET,
-        },
-      )
+      const accessToken = this.jwtService.sign({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        orgId: user.orgId,
+      })
 
       return { accessToken }
     } catch (err) {
@@ -208,28 +198,18 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string, orgId: string, role: string) {
-    const accessToken = this.jwtService.sign(
-      {
-        email: userId,
-        role,
-        orgId,
-      },
-      {
-        subject: userId,
-        expiresIn: process.env.JWT_EXPIRATION || "15m"
-      },
-    )
+    const accessToken = this.jwtService.sign({
+      sub: userId,
+      email: userId,
+      role,
+      orgId,
+    })
 
-    const refreshToken = this.jwtService.sign(
-      {
-        email: userId,
-        orgId,
-      },
-      {
-        subject: userId,
-        expiresIn: process.env.JWT_REFRESH_EXPIRATION || "30d"
-      },
-    )
+    const refreshToken = this.jwtService.sign({
+      sub: userId,
+      email: userId,
+      orgId,
+    })
 
     return { accessToken, refreshToken }
   }

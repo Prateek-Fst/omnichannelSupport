@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common"
-import type { PrismaService } from "../../common/prisma/prisma.service"
+import { PrismaService } from "../../common/prisma/prisma.service"
 import { logger } from "../../common/logger"
 import { v4 as uuid } from "uuid"
 
@@ -89,7 +89,7 @@ export class UsersService {
       data: {
         orgId,
         email,
-        role,
+        role: role as any,
         token,
         expiresAt,
         invitedBy: requesterId,

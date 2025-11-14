@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from "@nestjs/common"
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger"
-import type { ChannelsService } from "./channels.service"
+import { ChannelsService } from "./channels.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { RbacGuard } from "../auth/guards/rbac.guard"
 import { Roles } from "../auth/decorators/roles.decorator"
@@ -46,5 +46,10 @@ export class ChannelsController {
   @Roles("ADMIN")
   async deleteChannel(@Param('orgId') orgId: string, @Param('channelId') channelId: string, @Request() req) {
     return this.channelsService.deleteChannel(orgId, channelId, req.user.id)
+  }
+
+  @Get(":channelId/customers")
+  async getChannelCustomers(@Param('orgId') orgId: string, @Param('channelId') channelId: string) {
+    return this.channelsService.getChannelCustomers(orgId, channelId)
   }
 }

@@ -1,44 +1,45 @@
-import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common"
-import type { PrismaService } from "../../common/prisma/prisma.service"
-import type { Queue } from "bull"
+import { Injectable } from "@nestjs/common"
 import { InjectQueue } from "@nestjs/bull"
+import { Queue } from "bull"
+import { PrismaService } from "../../common/prisma/prisma.service"
 import { logger } from "../../common/logger"
 
 @Injectable()
 export class CampaignsService {
-  private campaignQueue: Queue
-
-  constructor(private prisma: PrismaService) {
-    this.campaignQueue = InjectQueue("campaigns")
-  }
+  constructor(
+    private prisma: PrismaService,
+    @InjectQueue("campaigns") private campaignQueue: Queue,
+  ) {}
 
   async getCampaigns(orgId: string) {
     return this.prisma.campaign.findMany({
       where: { orgId },
       include: {
-        channel: { select: { id: true, name: true, type: true } },
-        createdByUser: { select: { id: true, name: true } },
-        recipients: { select: { status: true } },
+        channel: true,
+        createdByUser: {
+          select: { id: true, name: true, email: true },
+        },
       },
-      orderBy: { createdAt: "desc" },
     })
   }
 
   async getCampaignById(orgId: string, campaignId: string) {
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id: campaignId, orgId },
+      where: {
+        id: campaignId,
+        orgId,
+      },
       include: {
-        channel: { select: { id: true, name: true, type: true } },
-        createdByUser: { select: { id: true, name: true } },
-        recipients: {
-          include: { campaign: false },
-          orderBy: { createdAt: "desc" },
+        channel: true,
+        createdByUser: {
+          select: { id: true, name: true, email: true },
         },
+        recipients: true,
       },
     })
 
     if (!campaign) {
-      throw new NotFoundException("Campaign not found")
+      throw new Error("Campaign not found")
     }
 
     return campaign
@@ -46,20 +47,18 @@ export class CampaignsService {
 
   async createCampaign(orgId: string, data: any, requesterId: string) {
     const requester = await this.prisma.user.findFirst({
-      where: { id: requesterId, orgId },
+      where: {
+        id: requesterId,
+        orgId,
+      },
     })
-
-    if (!requester || requester.role !== "ADMIN") {
-      throw new ForbiddenException("Only admins can create campaigns")
-    }
 
     const channel = await this.prisma.channel.findFirst({
-      where: { id: data.channelId, orgId },
+      where: {
+        id: data.channelId,
+        orgId,
+      },
     })
-
-    if (!channel) {
-      throw new NotFoundException("Channel not found")
-    }
 
     const campaign = await this.prisma.campaign.create({
       data: {
@@ -67,70 +66,67 @@ export class CampaignsService {
         channelId: data.channelId,
         name: data.name,
         messageTemplate: data.messageTemplate,
-        status: "DRAFT",
-        scheduledAt: data.scheduledAt,
+        scheduledAt: data.scheduledAt ? new Date(data.scheduledAt) : null,
         createdBy: requesterId,
       },
       include: {
-        channel: { select: { id: true, name: true } },
-        createdByUser: { select: { id: true, name: true } },
+        channel: true,
+        createdByUser: {
+          select: { id: true, name: true, email: true },
+        },
       },
     })
 
-    logger.info(`Campaign created: ${campaign.id} by ${requesterId}`)
-
+    logger.info(`Campaign created: ${campaign.id} by user: ${requesterId}`)
     return campaign
   }
 
   async addRecipients(orgId: string, campaignId: string, recipients: string[]) {
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id: campaignId, orgId },
+      where: {
+        id: campaignId,
+        orgId,
+      },
     })
 
     if (!campaign) {
-      throw new NotFoundException("Campaign not found")
+      throw new Error("Campaign not found")
     }
 
-    if (campaign.status !== "DRAFT") {
-      throw new ForbiddenException("Can only add recipients to draft campaigns")
-    }
+    const recipientData = recipients.map((contact) => ({
+      campaignId,
+      recipientContact: contact,
+    }))
 
-    const createdRecipients = await Promise.all(
-      recipients.map((contact) =>
+    await Promise.all(
+      recipientData.map((data) =>
         this.prisma.campaignRecipient.create({
-          data: {
-            campaignId,
-            recipientContact: contact,
-            status: "PENDING",
-          },
+          data,
         }),
       ),
     )
 
-    logger.info(`Added ${createdRecipients.length} recipients to campaign ${campaignId}`)
-
-    return createdRecipients
+    logger.info(`Added ${recipients.length} recipients to campaign: ${campaignId}`)
+    return { success: true, count: recipients.length }
   }
 
   async startCampaign(orgId: string, campaignId: string, requesterId: string) {
     const requester = await this.prisma.user.findFirst({
-      where: { id: requesterId, orgId },
+      where: {
+        id: requesterId,
+        orgId,
+      },
     })
 
-    if (!requester || requester.role !== "ADMIN") {
-      throw new ForbiddenException("Only admins can start campaigns")
-    }
-
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id: campaignId, orgId },
+      where: {
+        id: campaignId,
+        orgId,
+      },
     })
 
     if (!campaign) {
-      throw new NotFoundException("Campaign not found")
-    }
-
-    if (campaign.status !== "DRAFT") {
-      throw new ForbiddenException("Can only start draft campaigns")
+      throw new Error("Campaign not found")
     }
 
     const updated = await this.prisma.campaign.update({
@@ -138,50 +134,39 @@ export class CampaignsService {
       data: { status: "SENDING" },
     })
 
-    // Queue campaign for processing
-    await this.campaignQueue.add("send-campaign", { campaignId, orgId }, { priority: 1, removeOnComplete: false })
+    await this.campaignQueue.add("start-campaign", { campaignId })
 
-    logger.info(`Campaign started: ${campaignId}`)
-
+    logger.info(`Campaign started: ${campaignId} by user: ${requesterId}`)
     return updated
   }
 
   async getRecipients(orgId: string, campaignId: string) {
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id: campaignId, orgId },
+      where: {
+        id: campaignId,
+        orgId,
+      },
     })
-
-    if (!campaign) {
-      throw new NotFoundException("Campaign not found")
-    }
 
     return this.prisma.campaignRecipient.findMany({
       where: { campaignId },
-      orderBy: { createdAt: "desc" },
     })
   }
 
   async getCampaignStats(orgId: string, campaignId: string) {
     const campaign = await this.prisma.campaign.findFirst({
-      where: { id: campaignId, orgId },
+      where: {
+        id: campaignId,
+        orgId,
+      },
     })
-
-    if (!campaign) {
-      throw new NotFoundException("Campaign not found")
-    }
 
     const stats = await this.prisma.campaignRecipient.groupBy({
       by: ["status"],
       where: { campaignId },
-      _count: { id: true },
+      _count: { status: true },
     })
 
-    return {
-      campaignId,
-      total: stats.reduce((sum, s) => sum + s._count.id, 0),
-      pending: stats.find((s) => s.status === "PENDING")?._count.id || 0,
-      sent: stats.find((s) => s.status === "SENT")?._count.id || 0,
-      failed: stats.find((s) => s.status === "FAILED")?._count.id || 0,
-    }
+    return stats
   }
 }

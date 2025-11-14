@@ -13,11 +13,13 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "db:clear": "ts-node prisma/clear.ts",
     "seed": "ts-node prisma/seed.ts",
     "worker:inbound": "ts-node src/workers/inbound.worker.ts",
     "worker:outbound": "ts-node src/workers/outbound.worker.ts",
     "worker:campaigns": "ts-node src/workers/campaign.worker.ts",
     "worker:analytics": "ts-node src/workers/analytics.worker.ts",
+    "setup:channels": "ts-node scripts/setup-channels.ts",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:cov": "jest --coverage"
