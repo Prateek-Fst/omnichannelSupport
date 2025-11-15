@@ -29,6 +29,7 @@ async function processOutboundMessage(job) {
     }
 
     // Get connector and initialize with channel config
+    logger.info(`Channel config for ${channel.type}: ${JSON.stringify(channel.config)}`)
     const connector = connectorFactory.getConnector(channel.type)
     await connector.init((channel.config as Record<string, any>) || {})
 

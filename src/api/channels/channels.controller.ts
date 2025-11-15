@@ -4,6 +4,7 @@ import { ChannelsService } from "./channels.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { RbacGuard } from "../auth/guards/rbac.guard"
 import { Roles } from "../auth/decorators/roles.decorator"
+import { CreateInstagramChannelDto } from "./dto/create-instagram-channel.dto"
 
 @ApiTags("channels")
 @Controller("orgs/:orgId/channels")
@@ -15,7 +16,7 @@ export class ChannelsController {
   @Post()
   @UseGuards(RbacGuard)
   @Roles("ADMIN")
-  async createChannel(@Param('orgId') orgId: string, @Body() body: any, @Request() req) {
+  async createChannel(@Param('orgId') orgId: string, @Body() body: CreateInstagramChannelDto, @Request() req) {
     return this.channelsService.createChannel(orgId, body, req.user.id)
   }
 
@@ -51,5 +52,12 @@ export class ChannelsController {
   @Get(":channelId/customers")
   async getChannelCustomers(@Param('orgId') orgId: string, @Param('channelId') channelId: string) {
     return this.channelsService.getChannelCustomers(orgId, channelId)
+  }
+
+  @Post(":channelId/test-connection")
+  @UseGuards(RbacGuard)
+  @Roles("ADMIN")
+  async testConnection(@Param('orgId') orgId: string, @Param('channelId') channelId: string) {
+    return this.channelsService.testInstagramConnection(orgId, channelId)
   }
 }

@@ -1,0 +1,716 @@
+{
+  "info": {
+    "name": "DelightChat Instagram Integration",
+    "description": "Complete workflow for Instagram channel setup and messaging",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001",
+      "type": "string"
+    },
+    {
+      "key": "ngrokUrl",
+      "value": "https://43ad9a23bb45.ngrok-free.app",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "orgId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "channelId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ticketId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "1.1 Create Organization & Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                  "    pm.collectionVariables.set('orgId', response.user.orgId);",
+                  "    console.log('Organization created:', response.user.orgId);",
+                  "    console.log('Access token saved');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orgName\": \"Instagram Demo Company\",\n  \"name\": \"Admin User\",\n  \"email\": \"admin@instagramdemo.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/signup",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "signup"]
+            }
+          }
+        },
+        {
+          "name": "1.2 Login (Alternative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', response.accessToken);",
+                  "    pm.collectionVariables.set('orgId', response.user.orgId);",
+                  "    console.log('Logged in successfully');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@instagramdemo.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "1.3 Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "me"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Instagram Channel Setup",
+      "item": [
+        {
+          "name": "2.1 Create Instagram Channel",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('channelId', response.id);",
+                  "    console.log('Instagram channel created:', response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"INSTAGRAM\",\n  \"name\": \"Instagram Business Account\",\n  \"config\": {\n    \"facebookPageId\": \"780005311871882\",\n    \"instagramAccountId\": \"17841461222865329\",\n    \"pageAccessToken\": \"EAAaBWZBRyFecBPyx3NnOPZBiOdidBxZBESA4qLI0O9ojZB9GfmAUGuwZBv74JLlpKZBzZA9jwW7Obn6FO0Kv2za9RT9cizjawZB7PXddqR2AFQYcn1zu6s7sxCT7vob0H6HXkdfky7PKImM52fZBEa3hT4IZCEshP2CdJ5rFKYZA8nzAS1cUzH54FC75X8vFOdD\",\n    \"appSecret\": \"9c1835a21525dcfbd881fca719e52744\",\n    \"appId\": \"1831081534952935\",\n    \"webhookVerifyToken\": \"instagram_verify_token_123\",\n    \"webhookUrl\": \"{{ngrokUrl}}/webhook\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/channels",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "channels"]
+            }
+          }
+        },
+        {
+          "name": "2.2 Get All Channels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/channels",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "channels"]
+            }
+          }
+        },
+        {
+          "name": "2.3 Get Instagram Channel Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/channels/{{channelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "channels", "{{channelId}}"]
+            }
+          }
+        },
+        {
+          "name": "2.4 Test Instagram Connection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/channels/{{channelId}}/test-connection",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "channels", "{{channelId}}", "test-connection"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Webhook Setup & Testing",
+      "item": [
+        {
+          "name": "3.1 Webhook Verification (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/webhook/{{channelId}}?hub.mode=subscribe&hub.verify_token=instagram_verify_token_123&hub.challenge=test_challenge_123",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhook", "{{channelId}}"],
+              "query": [
+                {
+                  "key": "hub.mode",
+                  "value": "subscribe"
+                },
+                {
+                  "key": "hub.verify_token",
+                  "value": "instagram_verify_token_123"
+                },
+                {
+                  "key": "hub.challenge",
+                  "value": "test_challenge_123"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.2 Test Instagram DM (Mock Format)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senderPhone\": \"instagram_user_123\",\n  \"senderName\": \"John Doe\",\n  \"message\": \"Hello! I need help with my order\",\n  \"messageId\": \"ig_msg_123\",\n  \"metadata\": {\n    \"platform\": \"instagram\",\n    \"type\": \"direct_message\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhook/{{channelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhook", "{{channelId}}"]
+            }
+          }
+        },
+        {
+          "name": "3.3 Test Instagram Real DM Format",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-hub-signature-256",
+                "value": "sha256=test_signature"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"object\": \"instagram\",\n  \"entry\": [\n    {\n      \"id\": \"PAGE_ID\",\n      \"time\": 1234567890,\n      \"messaging\": [\n        {\n          \"sender\": {\n            \"id\": \"USER_ID_123\"\n          },\n          \"recipient\": {\n            \"id\": \"PAGE_ID\"\n          },\n          \"timestamp\": 1234567890,\n          \"message\": {\n            \"mid\": \"MESSAGE_ID\",\n            \"text\": \"Hi there! I have a question about your product.\"\n          }\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhook/{{channelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhook", "{{channelId}}"]
+            }
+          }
+        },
+        {
+          "name": "3.4 Test Instagram Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"object\": \"instagram\",\n  \"entry\": [\n    {\n      \"id\": \"PAGE_ID\",\n      \"time\": 1234567890,\n      \"changes\": [\n        {\n          \"field\": \"comments\",\n          \"value\": {\n            \"id\": \"COMMENT_ID_123\",\n            \"text\": \"Great post! Can you tell me more about this?\",\n            \"created_time\": 1234567890,\n            \"from\": {\n              \"username\": \"jane_doe\",\n              \"id\": \"USER_ID_456\"\n            },\n            \"media\": {\n              \"id\": \"POST_ID_789\",\n              \"media_type\": \"IMAGE\"\n            }\n          }\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhook/{{channelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhook", "{{channelId}}"]
+            }
+          }
+        },
+        {
+          "name": "3.5 Test Story Reply",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"object\": \"instagram\",\n  \"entry\": [\n    {\n      \"id\": \"PAGE_ID\",\n      \"time\": 1234567890,\n      \"messaging\": [\n        {\n          \"sender\": {\n            \"id\": \"USER_ID_789\"\n          },\n          \"recipient\": {\n            \"id\": \"PAGE_ID\"\n          },\n          \"timestamp\": 1234567890,\n          \"message\": {\n            \"mid\": \"STORY_REPLY_ID\",\n            \"text\": \"Love this story! Where can I buy this?\",\n            \"reply_to\": {\n              \"story\": {\n                \"id\": \"STORY_ID_123\"\n              }\n            }\n          }\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/webhook/{{channelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["webhook", "{{channelId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Customer Management",
+      "item": [
+        {
+          "name": "4.1 Get All Customers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const customers = pm.response.json();",
+                  "    if (customers.length > 0) {",
+                  "        pm.collectionVariables.set('customerId', customers[0].id);",
+                  "        console.log('First customer ID saved:', customers[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "customers"]
+            }
+          }
+        },
+        {
+          "name": "4.2 Get Instagram Customers Only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/customers?platform=INSTAGRAM",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "customers"],
+              "query": [
+                {
+                  "key": "platform",
+                  "value": "INSTAGRAM"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.3 Get Customer Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/customers/{{customerId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "customers", "{{customerId}}"]
+            }
+          }
+        },
+        {
+          "name": "4.4 Get Customer Tickets",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const tickets = pm.response.json();",
+                  "    if (tickets.length > 0) {",
+                  "        pm.collectionVariables.set('ticketId', tickets[0].id);",
+                  "        console.log('First ticket ID saved:', tickets[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/customers/{{customerId}}/tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "customers", "{{customerId}}", "tickets"]
+            }
+          }
+        },
+        {
+          "name": "4.5 Get Channel Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/channels/{{channelId}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "channels", "{{channelId}}", "customers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Ticket & Message Management",
+      "item": [
+        {
+          "name": "5.1 Get All Tickets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/tickets",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "tickets"]
+            }
+          }
+        },
+        {
+          "name": "5.2 Get Instagram Tickets Only",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/tickets?channelId={{channelId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "tickets"],
+              "query": [
+                {
+                  "key": "channelId",
+                  "value": "{{channelId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "5.3 Get Ticket with Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/tickets/{{ticketId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "tickets", "{{ticketId}}"]
+            }
+          }
+        },
+        {
+          "name": "5.4 Send Reply to Instagram Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Thank you for reaching out! How can I help you today?\",\n  \"direction\": \"OUTBOUND\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/tickets/{{ticketId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "tickets", "{{ticketId}}", "messages"]
+            }
+          }
+        },
+        {
+          "name": "5.5 Get Ticket Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/tickets/{{ticketId}}/messages",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "tickets", "{{ticketId}}", "messages"]
+            }
+          }
+        },
+        {
+          "name": "5.6 Assign Ticket to Agent",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"assigneeId\": \"USER_ID_TO_ASSIGN\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/tickets/{{ticketId}}/assign",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "tickets", "{{ticketId}}", "assign"]
+            }
+          }
+        },
+        {
+          "name": "5.7 Close Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/tickets/{{ticketId}}/close",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "tickets", "{{ticketId}}", "close"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Notifications & Analytics",
+      "item": [
+        {
+          "name": "6.1 Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/{{orgId}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "{{orgId}}", "notifications"]
+            }
+          }
+        },
+        {
+          "name": "6.2 Get Ticket Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/analytics/tickets?orgId={{orgId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "analytics", "tickets"],
+              "query": [
+                {
+                  "key": "orgId",
+                  "value": "{{orgId}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6.3 Get Channel Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orgs/analytics/channels?orgId={{orgId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["orgs", "analytics", "channels"],
+              "query": [
+                {
+                  "key": "orgId",
+                  "value": "{{orgId}}"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Instagram Setup Instructions",
+      "item": [
+        {
+          "name": "Instagram Setup Guide",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://developers.facebook.com/docs/instagram-api/getting-started",
+              "protocol": "https",
+              "host": ["developers", "facebook", "com"],
+              "path": ["docs", "instagram-api", "getting-started"]
+            },
+            "description": "# Instagram Integration Setup Guide\n\n## Prerequisites\n1. Instagram Business Account\n2. Facebook Page connected to Instagram\n3. Facebook App with Instagram Basic Display API\n\n## Steps to get Instagram Access Token:\n\n### 1. Create Facebook App\n- Go to https://developers.facebook.com/\n- Create new app → Business → Continue\n- Add Instagram Basic Display product\n\n### 2. Configure Instagram Basic Display\n- Add Instagram Test Users\n- Configure OAuth Redirect URIs\n- Get App ID and App Secret\n\n### 3. Get User Access Token\n```\nhttps://api.instagram.com/oauth/authorize\n  ?client_id={app-id}\n  &redirect_uri={redirect-uri}\n  &scope=user_profile,user_media\n  &response_type=code\n```\n\n### 4. Exchange for Long-lived Token\n```\ncurl -X GET \"https://graph.facebook.com/access_token\n  ?grant_type=ig_exchange_token\n  &client_secret={app-secret}\n  &access_token={short-lived-token}\"\n```\n\n### 5. Setup Webhooks\n- Configure webhook URL: `{{ngrokUrl}}/webhook/{channelId}`\n- Subscribe to: messages, messaging_postbacks, messaging_optins\n- Verify token: Use the same token in channel config\n\n## Required Channel Config:\n```json\n{\n  \"pageId\": \"YOUR_INSTAGRAM_PAGE_ID\",\n  \"accessToken\": \"YOUR_LONG_LIVED_ACCESS_TOKEN\", \n  \"appSecret\": \"YOUR_APP_SECRET\",\n  \"webhookVerifyToken\": \"your_custom_verify_token\",\n  \"webhookUrl\": \"https://your-domain.com/webhook\"\n}\n```\n\n## Testing:\n1. Use the webhook test endpoints in this collection\n2. Send a DM to your Instagram business account\n3. Comment on your Instagram posts\n4. Check notifications and customer creation\n"
+          }
+        }
+      ]
+    }
+  ]
+}

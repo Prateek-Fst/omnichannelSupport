@@ -15,7 +15,7 @@ const prisma = new PrismaClient()
 
 async function processInboundMessage(job) {
   try {
-    logger.info(`Processing inbound message: ${job.id}`)
+    logger.info(`🔄 Processing inbound message: ${job.id} - channelId: ${job.data.channelId}, orgId: ${job.data.orgId}`)
 
     const { channelId, orgId, parsedMessage } = job.data
 
@@ -25,8 +25,11 @@ async function processInboundMessage(job) {
     })
 
     if (!channel) {
+      logger.error(`❌ Channel not found: ${channelId}`)
       throw new Error(`Channel not found: ${channelId}`)
     }
+
+    logger.info(`📱 Channel found - type: ${channel.type}, orgId: ${channel.orgId}`)
 
     // Find or create customer
     let customer = await prisma.customer.findFirst({
@@ -48,7 +51,7 @@ async function processInboundMessage(job) {
           lastMessageAt: parsedMessage.timestamp
         }
       })
-      logger.info(`Auto-created customer: ${customer.id} (${customer.platform})`)
+      logger.info(`👤 Auto-created customer: ${customer.id} (${customer.platform}) - name: ${customer.name}, externalId: ${customer.externalId}`)
     } else {
       // Update customer last message
       await prisma.customer.update({
@@ -58,6 +61,7 @@ async function processInboundMessage(job) {
           lastMessageAt: parsedMessage.timestamp
         }
       })
+      logger.info(`👤 Updated existing customer: ${customer.id}`)
     }
 
     // Find or create ticket
@@ -81,13 +85,14 @@ async function processInboundMessage(job) {
           priority: "MEDIUM",
         },
       })
-      logger.info(`Auto-created ticket: ${ticket.id}`)
+      logger.info(`🎫 Auto-created ticket: ${ticket.id} - customerId: ${customer.id}, subject: ${ticket.subject}`)
     } else if (!ticket.customerId) {
       // Link existing ticket to customer
       await prisma.ticket.update({
         where: { id: ticket.id },
         data: { customerId: customer.id }
       })
+      logger.info(`🎫 Linked existing ticket to customer: ${ticket.id}`)
     }
 
     // Create message
@@ -131,10 +136,10 @@ async function processInboundMessage(job) {
       })
     }
 
-    logger.info(`Inbound message processed: customer=${customer.id}, ticket=${ticket.id}`)
+    logger.info(`✅ Inbound message processed successfully - customerId: ${customer.id}, ticketId: ${ticket.id}, platform: ${channel.type}`)
     return { success: true, ticketId: ticket.id, customerId: customer.id }
   } catch (err) {
-    logger.error(`Error processing inbound message: ${err.message}`)
+    logger.error(`❌ Error processing inbound message ${job.id}: ${err.message}`)
     throw err
   }
 }
