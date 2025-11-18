@@ -198,16 +198,21 @@ export class AuthService {
   }
 
   private async generateTokens(userId: string, orgId: string, role: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true }
+    })
+
     const accessToken = this.jwtService.sign({
       sub: userId,
-      email: userId,
+      email: user.email,
       role,
       orgId,
     })
 
     const refreshToken = this.jwtService.sign({
       sub: userId,
-      email: userId,
+      email: user.email,
       orgId,
     })
 

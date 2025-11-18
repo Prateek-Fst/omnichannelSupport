@@ -29,7 +29,10 @@ async function bootstrap() {
         forbidNonWhitelisted: true,
         transform: true,
         exceptionFactory: (errors: any) => {
-          const messages = errors.map((error: any) => `${error.property}: ${Object.values(error.constraints).join(", ")}`)
+            const messages = errors.map((error: any) => {
+            const constraints = error.constraints || {}
+            return `${error.property}: ${Object.values(constraints).join(", ")}`
+          })
           return new BadRequestException(messages)
         },
       }),

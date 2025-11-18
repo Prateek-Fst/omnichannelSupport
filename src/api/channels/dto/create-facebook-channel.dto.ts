@@ -2,16 +2,11 @@ import { IsString, IsNotEmpty, ValidateNested, IsOptional } from "class-validato
 import { Type } from "class-transformer"
 import { ApiProperty } from "@nestjs/swagger"
 
-class InstagramChannelConfig {
-  @ApiProperty({ description: "Facebook Page ID connected to Instagram Business Account" })
+class FacebookChannelConfig {
+  @ApiProperty({ description: "Facebook Page ID" })
   @IsString()
   @IsNotEmpty()
   facebookPageId: string
-
-  @ApiProperty({ description: "Instagram Business Account ID" })
-  @IsString()
-  @IsNotEmpty()
-  instagramAccountId: string
 
   @ApiProperty({ description: "Facebook Page Access Token (long-lived)" })
   @IsString()
@@ -33,25 +28,25 @@ class InstagramChannelConfig {
   @IsNotEmpty()
   webhookVerifyToken: string
 
-  @ApiProperty({ description: "Webhook URL for receiving Instagram messages" })
+  @ApiProperty({ description: "Webhook URL for receiving Facebook messages" })
   @IsString()
   @IsNotEmpty()
   webhookUrl: string
 }
 
-export class CreateInstagramChannelDto {
-  @ApiProperty({ enum: ["INSTAGRAM"] })
+export class CreateFacebookChannelDto {
+  @ApiProperty({ enum: ["FACEBOOK"] })
   @IsString()
   @IsNotEmpty()
-  type: "INSTAGRAM"
+  type: "FACEBOOK"
 
   @ApiProperty({ description: "Channel display name" })
   @IsString()
   @IsNotEmpty()
   name: string
 
-  @ApiProperty({ type: InstagramChannelConfig })
+  @ApiProperty({ type: FacebookChannelConfig })
   @ValidateNested()
-  @Type(() => InstagramChannelConfig)
-  config: InstagramChannelConfig
+  @Type(() => FacebookChannelConfig)
+  config: FacebookChannelConfig
 }

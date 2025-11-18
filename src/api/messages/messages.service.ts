@@ -35,12 +35,19 @@ export class MessagesService {
   }
 
   async createMessage(orgId: string, ticketId: string, data: any, requesterId: string) {
+    logger.info(`Creating message - orgId: ${orgId}, ticketId: ${ticketId}, requesterId: ${requesterId}`)
+    
     const requester = await this.prisma.user.findFirst({
       where: {
         id: requesterId,
         orgId,
       },
     })
+
+    if (!requester) {
+      logger.error(`Requester not found - id: ${requesterId}, orgId: ${orgId}`)
+      throw new Error("User not found")
+    }
 
     const ticket = await this.prisma.ticket.findFirst({
       where: {
@@ -53,8 +60,24 @@ export class MessagesService {
     })
 
     if (!ticket) {
+      logger.error(`Ticket not found - id: ${ticketId}, orgId: ${orgId}`)
+      
+      // Try to find ticket without orgId constraint to debug
+      const ticketAnyOrg = await this.prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: { channel: true }
+      })
+      
+      if (ticketAnyOrg) {
+        logger.error(`Ticket exists but in different org - ticketOrgId: ${ticketAnyOrg.orgId}, requestedOrgId: ${orgId}`)
+      } else {
+        logger.error(`Ticket does not exist at all - ticketId: ${ticketId}`)
+      }
+      
       throw new Error("Ticket not found")
     }
+    
+    logger.info(`Ticket found - id: ${ticket.id}, orgId: ${ticket.orgId}, channelId: ${ticket.channelId}`)
 
     const message = await this.prisma.message.create({
       data: {

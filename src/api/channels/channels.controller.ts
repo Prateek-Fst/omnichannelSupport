@@ -5,6 +5,7 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { RbacGuard } from "../auth/guards/rbac.guard"
 import { Roles } from "../auth/decorators/roles.decorator"
 import { CreateInstagramChannelDto } from "./dto/create-instagram-channel.dto"
+import { CreateFacebookChannelDto } from "./dto/create-facebook-channel.dto"
 
 @ApiTags("channels")
 @Controller("orgs/:orgId/channels")
@@ -16,7 +17,7 @@ export class ChannelsController {
   @Post()
   @UseGuards(RbacGuard)
   @Roles("ADMIN")
-  async createChannel(@Param('orgId') orgId: string, @Body() body: CreateInstagramChannelDto, @Request() req) {
+  async createChannel(@Param('orgId') orgId: string, @Body() body: CreateInstagramChannelDto | CreateFacebookChannelDto | any, @Request() req) {
     return this.channelsService.createChannel(orgId, body, req.user.id)
   }
 
@@ -58,6 +59,15 @@ export class ChannelsController {
   @UseGuards(RbacGuard)
   @Roles("ADMIN")
   async testConnection(@Param('orgId') orgId: string, @Param('channelId') channelId: string) {
-    return this.channelsService.testInstagramConnection(orgId, channelId)
+    // Get channel type first
+    const channel = await this.channelsService.getChannelById(orgId, channelId)
+    
+    if (channel.type === 'INSTAGRAM') {
+      return this.channelsService.testInstagramConnection(orgId, channelId)
+    } else if (channel.type === 'FACEBOOK') {
+      return this.channelsService.testFacebookConnection(orgId, channelId)
+    } else {
+      throw new Error(`Test connection not implemented for ${channel.type}`)
+    }
   }
 }
