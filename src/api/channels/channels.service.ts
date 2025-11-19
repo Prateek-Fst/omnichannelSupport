@@ -54,13 +54,13 @@ export class ChannelsService {
       webhookTest = await this.testWebhookVerification(channel.id, data.config.webhookVerifyToken)
     }
 
-    // Auto-setup webhook for Telegram
+    // Auto-setup webhook for Telegram and Email
     let webhookSetup = null
-    if (channel.type === ('TELEGRAM' as any)) {
+    if (channel.type === ('TELEGRAM' as any) || channel.type === ('EMAIL' as any)) {
       try {
         webhookSetup = await this.setupWebhookSubscriptionInternal(channel.type, data.config, webhookUrl)
       } catch (error) {
-        logger.warn(`Failed to auto-setup Telegram webhook: ${error.message}`)
+        logger.warn(`Failed to auto-setup ${channel.type} webhook: ${error.message}`)
         webhookSetup = { success: false, error: error.message }
       }
     }
@@ -75,7 +75,9 @@ export class ChannelsService {
       webhookTest,
       webhookSetup,
       instructions: channel.type === ('TELEGRAM' as any)
-        ? 'Telegram webhook configured automatically' 
+        ? 'Telegram webhook configured automatically'
+        : channel.type === ('EMAIL' as any)
+        ? 'Email channel configured automatically'
         : `Set this webhook URL in your ${channel.type} app: ${webhookUrl}`
     }
   }
@@ -470,6 +472,62 @@ export class ChannelsService {
     return results
   }
 
+  async testEmailConnection(orgId: string, channelId: string) {
+    const channel = await this.prisma.channel.findFirst({
+      where: { id: channelId, orgId, type: 'EMAIL' as any }
+    })
+
+    if (!channel) {
+      throw new NotFoundException("Email channel not found")
+    }
+
+    const config = channel.config as any
+    const results = {
+      channelId,
+      config: {
+        email: config.email,
+        smtpHost: config.smtpHost,
+        smtpPort: config.smtpPort,
+        imapHost: config.imapHost,
+        imapPort: config.imapPort,
+        hasPassword: !!config.password
+      },
+      tests: []
+    }
+
+    const connector = this.connectorFactory.getConnector('EMAIL') as any
+    await connector.init(config)
+
+    // Test SMTP connection
+    try {
+      const testResult = await connector.testConnection()
+      
+      if (testResult.success) {
+        results.tests.push({
+          test: 'SMTP Connection',
+          status: 'PASS',
+          message: 'Email server connection successful',
+          data: connector.getConfigInfo()
+        })
+      } else {
+        results.tests.push({
+          test: 'SMTP Connection',
+          status: 'FAIL',
+          message: testResult.error || 'Failed to connect to email server'
+        })
+      }
+    } catch (error) {
+      results.tests.push({
+        test: 'SMTP Connection',
+        status: 'ERROR',
+        message: error.message
+      })
+    }
+
+    logger.info(`Email connection test completed for channel: ${channelId} - ${results.tests.length} tests run`)
+    return results
+  }
+
   private async testWebhookVerification(channelId: string, verifyToken: string) {
     try {
       const baseUrl = process.env.WEBHOOK_BASE_URL || 'https://6a9b034f4f25.ngrok-free.app'
@@ -601,6 +659,14 @@ export class ChannelsService {
         }
 
         return { success: true, message: 'Instagram webhook subscription created successfully' }
+      }
+
+      // For Email channels
+      if (channelType === 'EMAIL') {
+        // Email doesn't require webhook setup like social platforms
+        // Instead, we would typically set up IMAP polling or email forwarding
+        logger.info(`✅ Email channel configured - no webhook setup required`)
+        return { success: true, message: 'Email channel configured successfully' }
       }
 
       // For Telegram channels

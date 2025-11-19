@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request } from "@nestjs/common"
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, Query } from "@nestjs/common"
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger"
 import { ChannelsService } from "./channels.service"
+import { EmailService } from "./email.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { RbacGuard } from "../auth/guards/rbac.guard"
 import { Roles } from "../auth/decorators/roles.decorator"
@@ -12,7 +13,10 @@ import { CreateFacebookChannelDto } from "./dto/create-facebook-channel.dto"
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class ChannelsController {
-  constructor(private channelsService: ChannelsService) {}
+  constructor(
+    private channelsService: ChannelsService,
+    private emailService: EmailService
+  ) {}
 
   @Post()
   @UseGuards(RbacGuard)
@@ -69,6 +73,8 @@ export class ChannelsController {
       return this.channelsService.testFacebookConnection(orgId, channelId)
     } else if (channelType === 'TELEGRAM') {
       return this.channelsService.testTelegramConnection(orgId, channelId)
+    } else if (channelType === 'EMAIL') {
+      return this.channelsService.testEmailConnection(orgId, channelId)
     } else {
       throw new Error(`Test connection not implemented for ${channelType}`)
     }
@@ -79,5 +85,34 @@ export class ChannelsController {
   @Roles("ADMIN")
   async setupWebhook(@Param('orgId') orgId: string, @Param('channelId') channelId: string) {
     return this.channelsService.setupWebhookSubscription(orgId, channelId)
+  }
+
+  @Get(":channelId/emails")
+  async getEmails(
+    @Param('orgId') orgId: string, 
+    @Param('channelId') channelId: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10'
+  ) {
+    return this.emailService.fetchEmails(orgId, channelId, parseInt(page), parseInt(limit))
+  }
+
+  @Post(":channelId/emails/:emailUid/reply")
+  async replyToEmail(
+    @Param('orgId') orgId: string,
+    @Param('channelId') channelId: string,
+    @Param('emailUid') emailUid: string,
+    @Body() body: { content: string; subject: string }
+  ) {
+    return this.emailService.replyToEmail(orgId, channelId, emailUid, body.content, body.subject)
+  }
+
+  @Post(":channelId/emails/:emailUid/mark-read")
+  async markEmailAsRead(
+    @Param('orgId') orgId: string,
+    @Param('channelId') channelId: string,
+    @Param('emailUid') emailUid: string
+  ) {
+    return this.emailService.markEmailAsRead(channelId, emailUid)
   }
 }

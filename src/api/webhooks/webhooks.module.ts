@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common"
 import { BullModule } from "@nestjs/bull"
 import { WebhooksController } from "./webhooks.controller"
+import { EmailTestController } from "./email-test.controller"
 import { ChannelsModule } from "../channels/channels.module"
 import { PrismaModule } from "../../common/prisma/prisma.module"
 
@@ -12,6 +13,6 @@ import { PrismaModule } from "../../common/prisma/prisma.module"
     }),
     ChannelsModule,
   ],
-  controllers: [WebhooksController],
+  controllers: [WebhooksController, EmailTestController],
 })
 export class WebhooksModule {}

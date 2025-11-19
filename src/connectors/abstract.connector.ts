@@ -2,7 +2,7 @@ import type { ChannelConnector, ParsedMessage, OutboundMessage, ProviderSendResu
 import { logger } from "../common/logger"
 
 export abstract class AbstractConnector implements ChannelConnector {
-  abstract type: "whatsapp" | "instagram" | "facebook" | "twitter" | "linkedin" | "telegram" | "mock"
+  abstract type: "whatsapp" | "instagram" | "facebook" | "twitter" | "linkedin" | "telegram" | "email" | "mock"
   protected config: Record<string, any> = {}
 
   async init(config: Record<string, any>): Promise<void> {
