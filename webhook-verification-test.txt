@@ -1,0 +1,29 @@
+WEBHOOK VERIFICATION TEST ADDED
+===============================
+
+CHANGE MADE:
+After channel creation, the system now automatically calls the webhook verification endpoint to test if it's working.
+
+API CALL ADDED:
+GET /webhook/{channelId}?hub.mode=subscribe&hub.verify_token={token}&hub.challenge=test_challenge_123
+
+FLOW:
+1. Channel created in database
+2. Webhook URL constructed: {baseUrl}/webhook/{channelId}
+3. Test verification call made automatically
+4. If successful: logs "✅ Webhook verification test passed: test_challenge_123"
+5. If failed: logs "⚠️ Webhook verification test failed: {status}"
+6. Channel creation response returned
+
+BENEFITS:
+- Immediate feedback if webhook endpoint is working
+- Validates webhook verification logic
+- Helps debug webhook setup issues
+- No impact on channel creation (test runs after channel is saved)
+
+LOG EXAMPLES:
+Success: "✅ Webhook verification test passed: test_challenge_123"
+Failure: "⚠️ Webhook verification test failed: 404"
+Error: "⚠️ Webhook verification test error: fetch failed"
+
+This ensures the webhook endpoint is accessible and responding correctly before attempting Facebook/Instagram subscription.

@@ -26,7 +26,7 @@ export interface ProviderSendResult {
 }
 
 export interface ChannelConnector {
-  type: "whatsapp" | "instagram" | "facebook" | "twitter" | "linkedin" | "mock"
+  type: "whatsapp" | "instagram" | "facebook" | "twitter" | "linkedin" | "telegram" | "mock"
   init(config: Record<string, any>): Promise<void>
   verifyWebhookSignature(headers: Record<string, string>, body: any): boolean
   parseIncomingWebhook(body: any): Promise<ParsedMessage>

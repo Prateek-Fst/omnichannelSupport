@@ -1,0 +1,70 @@
+WEBHOOK VERIFICATION FIX - Instagram/Facebook Channel Setup
+===========================================================
+
+PROBLEM FIXED:
+- Instagram/Facebook webhook verification was failing with 404 error
+- The issue was that webhook subscription was attempted before channel creation
+- Channel ID is needed in webhook URL: /webhook/{channelId}
+- But channel ID doesn't exist until after channel is created
+
+SOLUTION IMPLEMENTED:
+- Modified createChannel() to create channel FIRST, then setup webhook
+- Added webhook URL verification before attempting Facebook/Instagram subscription
+- Channel ID is now available when setting up webhook subscription
+
+CHANGES MADE:
+=============
+
+1. channels.service.ts - createChannel() method:
+   - Create channel first to get the channel ID
+   - Pass channel ID to setupWebhookSubscription()
+   - If webhook setup fails, mark channel as inactive but still return it
+   - Added webhook URL verification test before subscription
+
+2. setupWebhookSubscription() method:
+   - Now receives channelId parameter
+   - Constructs webhook URL: {baseUrl}/webhook/{channelId}
+   - Tests webhook URL accessibility before Facebook/Instagram subscription
+   - Uses test URL: /webhook/{channelId}?hub.mode=subscribe&hub.verify_token={token}&hub.challenge=test_challenge_123
+
+FLOW NOW WORKS:
+===============
+
+1. POST /orgs/:orgId/channels
+   ↓
+2. Channel created in database (gets unique ID)
+   ↓
+3. Webhook URL constructed: http://localhost:3000/webhook/{channelId}
+   ↓
+4. Test webhook URL accessibility
+   ↓
+5. If accessible, setup Facebook/Instagram webhook subscription
+   ↓
+6. Facebook/Instagram calls GET /webhook/{channelId} for verification
+   ↓
+7. Webhook controller verifies token and returns challenge
+   ↓
+8. Channel becomes active
+
+WEBHOOK VERIFICATION ENDPOINT:
+==============================
+GET /webhook/{channelId}?hub.mode=subscribe&hub.verify_token={token}&hub.challenge={challenge}
+
+The webhook controller:
+- Finds channel by ID
+- Compares verify token from config
+- Returns challenge if tokens match
+- This allows Facebook/Instagram to verify the webhook URL
+
+FRONTEND USAGE:
+===============
+When creating Instagram/Facebook channels, the API will:
+- Create the channel immediately
+- Return success if webhook setup works
+- Return error if webhook verification fails
+- Channel ID is available for webhook URL construction
+
+The webhook URL format is:
+http://localhost:3000/webhook/{channelId}
+
+This URL must be configured in Facebook/Instagram Developer Console for the app.

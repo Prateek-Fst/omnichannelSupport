@@ -4,6 +4,7 @@ import { UsersService } from "./users.service"
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard"
 import { RbacGuard } from "../auth/guards/rbac.guard"
 import { Roles } from "../auth/decorators/roles.decorator"
+import { SendInviteDto } from "./dto/send-invite.dto"
 
 @ApiTags("users")
 @Controller("orgs/:orgId/users")
@@ -32,7 +33,7 @@ export class UsersController {
   @Post("invites")
   @UseGuards(RbacGuard)
   @Roles("ADMIN")
-  async sendInvite(@Param('orgId') orgId: string, @Body() body: { email: string; role: string }, @Request() req: any) {
+  async sendInvite(@Param('orgId') orgId: string, @Body() body: SendInviteDto, @Request() req: any) {
     return this.usersService.sendInvite(orgId, body.email, body.role, req.user.id)
   }
 

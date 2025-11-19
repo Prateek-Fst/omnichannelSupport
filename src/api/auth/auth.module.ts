@@ -9,7 +9,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy"
   imports: [
     PassportModule,
     JwtModule.registerAsync({
-      useFactory: async () => ({
+      useFactory: () => ({
         secret: process.env.JWT_SECRET || "your-secret-key",
       }),
     }),

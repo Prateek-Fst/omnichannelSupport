@@ -61,13 +61,23 @@ export class ChannelsController {
   async testConnection(@Param('orgId') orgId: string, @Param('channelId') channelId: string) {
     // Get channel type first
     const channel = await this.channelsService.getChannelById(orgId, channelId)
+    const channelType = channel.type as string
     
-    if (channel.type === 'INSTAGRAM') {
+    if (channelType === 'INSTAGRAM') {
       return this.channelsService.testInstagramConnection(orgId, channelId)
-    } else if (channel.type === 'FACEBOOK') {
+    } else if (channelType === 'FACEBOOK') {
       return this.channelsService.testFacebookConnection(orgId, channelId)
+    } else if (channelType === 'TELEGRAM') {
+      return this.channelsService.testTelegramConnection(orgId, channelId)
     } else {
-      throw new Error(`Test connection not implemented for ${channel.type}`)
+      throw new Error(`Test connection not implemented for ${channelType}`)
     }
+  }
+
+  @Post(":channelId/setup-webhook")
+  @UseGuards(RbacGuard)
+  @Roles("ADMIN")
+  async setupWebhook(@Param('orgId') orgId: string, @Param('channelId') channelId: string) {
+    return this.channelsService.setupWebhookSubscription(orgId, channelId)
   }
 }

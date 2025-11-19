@@ -6,6 +6,7 @@ import { InstagramConnector } from "./instagram.connector"
 import { FacebookConnector } from "./facebook.connector"
 import { TwitterConnector } from "./twitter.connector"
 import { LinkedInConnector } from "./linkedin.connector"
+import { TelegramConnector } from "./telegram.connector"
 import { logger } from "../common/logger"
 
 @Injectable()
@@ -37,6 +38,9 @@ export class ConnectorFactory {
         break
       case "linkedin":
         connector = new LinkedInConnector()
+        break
+      case "telegram":
+        connector = new TelegramConnector()
         break
       default:
         throw new Error(`Unknown connector type: ${type}`)

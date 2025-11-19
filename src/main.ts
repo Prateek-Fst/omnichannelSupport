@@ -15,6 +15,14 @@ async function bootstrap() {
 
     console.log("NestJS app created successfully")
 
+    // Enable CORS for frontend
+    app.enableCors({
+      origin: ['http://localhost:3001', 'http://localhost:3000'],
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+      credentials: true,
+    })
+
     app.use(helmet())
     app.use((req: any, res: any, next: any) => {
       res.setHeader("X-Content-Type-Options", "nosniff")

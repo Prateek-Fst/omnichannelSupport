@@ -264,6 +264,7 @@ enum ChannelType {
   FACEBOOK
   TWITTER
   LINKEDIN
+  TELEGRAM
   MOCK
 }
 

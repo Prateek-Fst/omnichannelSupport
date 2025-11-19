@@ -103,12 +103,15 @@ export class AuthService {
         throw new UnauthorizedException("User not found or inactive")
       }
 
-      const accessToken = this.jwtService.sign({
-        sub: user.id,
-        email: user.email,
-        role: user.role,
-        orgId: user.orgId,
-      })
+      const accessToken = this.jwtService.sign(
+        {
+          sub: user.id,
+          email: user.email,
+          role: user.role,
+          orgId: user.orgId,
+        },
+        { expiresIn: '15m' }
+      )
 
       return { accessToken }
     } catch (err) {
@@ -177,6 +180,36 @@ export class AuthService {
     }
   }
 
+  async getInviteDetails(token: string) {
+    const invite = await this.prisma.invite.findUnique({
+      where: { token },
+      include: {
+        organisation: { select: { name: true } },
+        invitedByUser: { select: { name: true } }
+      }
+    })
+
+    if (!invite) {
+      throw new BadRequestException("Invalid invite token")
+    }
+
+    if (invite.expiresAt < new Date()) {
+      throw new BadRequestException("Invite has expired")
+    }
+
+    if (invite.accepted) {
+      throw new BadRequestException("Invite has already been accepted")
+    }
+
+    return {
+      email: invite.email,
+      role: invite.role,
+      orgName: invite.organisation.name,
+      invitedBy: invite.invitedByUser.name,
+      expiresAt: invite.expiresAt
+    }
+  }
+
   async getMe(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -203,18 +236,24 @@ export class AuthService {
       select: { email: true }
     })
 
-    const accessToken = this.jwtService.sign({
-      sub: userId,
-      email: user.email,
-      role,
-      orgId,
-    })
+    const accessToken = this.jwtService.sign(
+      {
+        sub: userId,
+        email: user.email,
+        role,
+        orgId,
+      },
+      { expiresIn: '15m' }
+    )
 
-    const refreshToken = this.jwtService.sign({
-      sub: userId,
-      email: user.email,
-      orgId,
-    })
+    const refreshToken = this.jwtService.sign(
+      {
+        sub: userId,
+        email: user.email,
+        orgId,
+      },
+      { expiresIn: '30d' }
+    )
 
     return { accessToken, refreshToken }
   }

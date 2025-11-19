@@ -1,11 +1,17 @@
 import { Injectable, NotFoundException, ForbiddenException } from "@nestjs/common"
+import { ConfigService } from "@nestjs/config"
 import { PrismaService } from "../../common/prisma/prisma.service"
+import { EmailService } from "../../common/email/email.service"
 import { logger } from "../../common/logger"
 import { v4 as uuid } from "uuid"
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+    private configService: ConfigService
+  ) {}
 
   async getUsers(orgId: string) {
     return this.prisma.user.findMany({
@@ -96,15 +102,29 @@ export class UsersService {
       },
     })
 
+    // Get organization name for email
+    const org = await this.prisma.organisation.findUnique({
+      where: { id: orgId },
+      select: { name: true }
+    })
+
+    // Send invitation email
+    await this.emailService.sendInviteEmail(
+      email,
+      requester.name,
+      org?.name || 'Your Organization',
+      role,
+      token
+    )
+
     logger.info(`Invite sent to ${email} in org ${orgId}`)
 
-    // In production, send email with invite link
     return {
       id: invite.id,
       email: invite.email,
       role: invite.role,
       expiresAt: invite.expiresAt,
-      inviteLink: `${process.env.APP_URL || "http://localhost:3000"}/invite/${invite.token}`,
+      inviteLink: `${this.configService.get('FRONTEND_URL')}/accept-invite?token=${invite.token}`,
     }
   }
 

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, UseGuards, Body, Request } from "@nestjs/common"
+import { Controller, Post, Get, UseGuards, Body, Request, Query } from "@nestjs/common"
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger"
 import { AuthService } from "./auth.service"
 import { JwtAuthGuard } from "./guards/jwt-auth.guard"
@@ -25,6 +25,11 @@ export class AuthController {
   @Post("refresh")
   async refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshAccessToken(dto)
+  }
+
+  @Get("invite")
+  async getInviteDetails(@Query("token") token: string) {
+    return this.authService.getInviteDetails(token)
   }
 
   @Post("accept-invite")

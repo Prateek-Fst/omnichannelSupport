@@ -1,0 +1,85 @@
+HTTPS WEBHOOK REQUIREMENT FIX
+=============================
+
+PROBLEM:
+Facebook/Instagram requires HTTPS URLs for webhook subscriptions.
+Error: "At least one of the fields specified requires a secure callback_url (HTTPS)."
+
+SOLUTION:
+- Skip automatic webhook setup in development (HTTP)
+- Provide webhook URL and setup instructions in response
+- Only attempt automatic setup when HTTPS is available
+
+CHANGES MADE:
+=============
+
+1. Modified createChannel() in channels.service.ts:
+   - Check if WEBHOOK_BASE_URL starts with 'https://'
+   - Skip webhook setup if HTTP (development)
+   - Return webhook setup information in response
+
+2. Response now includes:
+   - webhookUrl: The full webhook URL
+   - webhookSetup object with:
+     - required: boolean (true for FB/IG)
+     - httpsRequired: true
+     - currentUrl: the webhook URL
+     - isHttps: boolean
+     - status: 'ready' or 'requires_https'
+     - instructions: Setup guidance
+
+DEVELOPMENT WORKFLOW:
+====================
+
+Option 1: Use ngrok for HTTPS tunnel
+```bash
+# Install ngrok
+npm install -g ngrok
+
+# Start your app
+npm run start:dev
+
+# In another terminal, create HTTPS tunnel
+ngrok http 3000
+
+# Set environment variable
+export WEBHOOK_BASE_URL=https://abc123.ngrok.io
+
+# Now create channels - webhooks will work
+```
+
+Option 2: Manual webhook setup
+1. Create channel (gets webhook URL)
+2. Use returned webhookUrl in Facebook/Instagram Developer Console
+3. Configure webhook manually in Facebook/Instagram settings
+
+PRODUCTION DEPLOYMENT:
+=====================
+Set WEBHOOK_BASE_URL to your production HTTPS URL:
+```bash
+export WEBHOOK_BASE_URL=https://yourdomain.com
+```
+
+Webhooks will be automatically configured when creating channels.
+
+RESPONSE EXAMPLE:
+================
+```json
+{
+  "id": "channel-uuid",
+  "type": "INSTAGRAM",
+  "name": "Instagram Business",
+  "isActive": true,
+  "webhookUrl": "https://abc123.ngrok.io/webhook/channel-uuid",
+  "webhookSetup": {
+    "required": true,
+    "httpsRequired": true,
+    "currentUrl": "https://abc123.ngrok.io/webhook/channel-uuid",
+    "isHttps": true,
+    "status": "ready",
+    "instructions": "Configure this URL in Facebook/Instagram Developer Console"
+  }
+}
+```
+
+This fix allows development to continue while providing clear guidance for webhook setup.

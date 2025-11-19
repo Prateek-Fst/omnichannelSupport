@@ -18,6 +18,10 @@ export class TicketsService {
       include: {
         channel: { select: { id: true, name: true, type: true } },
         assignee: { select: { id: true, name: true, email: true } },
+        customer: { select: { id: true, name: true, platform: true } },
+        _count: {
+          select: { messages: true }
+        }
       },
       orderBy: { updatedAt: "desc" },
     })

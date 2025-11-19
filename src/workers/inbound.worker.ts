@@ -1,9 +1,12 @@
+import { config } from 'dotenv'
 import { Worker } from "bullmq"
 import { PrismaClient } from "@prisma/client"
 import { logger } from "../common/logger"
 import Redis from "ioredis"
 import { v4 as uuid } from "uuid"
 import { ChannelType, NotificationType } from "@prisma/client"
+
+config()
 
 const redis = new Redis({
   host: process.env.REDIS_HOST || "localhost",

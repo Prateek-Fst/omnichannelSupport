@@ -28,7 +28,7 @@ echo ""
 
 # Test 3: Test webhook endpoint accessibility
 echo "3️⃣ Testing webhook endpoint..."
-WEBHOOK_RESPONSE=$(curl -s "https://1124e994fc0c.ngrok-free.app/webhook/0180acbd-8e10-42a7-95bf-65b6872380de?hub.mode=subscribe&hub.verify_token=facebook_verify_token_123&hub.challenge=automation_test")
+WEBHOOK_RESPONSE=$(curl -s "https://6a9b034f4f25.ngrok-free.app/webhook/15d3d7d4-851c-4ea3-aa8d-2506422f5778?hub.mode=subscribe&hub.verify_token=facebook_verify_token_123&hub.challenge=automation_test")
 
 if [ "$WEBHOOK_RESPONSE" = "automation_test" ]; then
     echo "✅ Webhook endpoint: ACCESSIBLE"
